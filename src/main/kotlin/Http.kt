@@ -1,23 +1,23 @@
 package deblugger.me
 
+import deblugger.me.model.Call
+import deblugger.me.model.MethodEnum
 import okhttp3.*
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.util.*
 import kotlin.system.exitProcess
 
 private val client = OkHttpClient()
 
-fun doTheCall(call: JSONObject) {
+fun doTheCall(call: Call) {
 	val headers = extractHeaders(call)
 
-	when(call["method"]) {
-		"POST" -> doPost(call["url"].toString(), headers, call["body"].toString())
-		"GET" -> doGet(call["url"].toString(), headers)
-		"PUT" -> doPut(call["url"].toString(), headers, call["body"].toString())
+	when(call.method) {
+		MethodEnum.POST -> doPost(call.url, headers, call.body)
+		MethodEnum.GET -> doGet(call.url, headers)
+		MethodEnum.PUT -> doPut(call.url, headers, call.body)
 		else -> {
 			println("Request method not allowed")
 			exitProcess(-1)
@@ -26,9 +26,9 @@ fun doTheCall(call: JSONObject) {
 }
 
 fun getOauth2(args: List<String>) {
-	val envConfig = getConfig(args, "authentication")
+	val authConfig = getAuthConfig(args)
 
-	val base64Authorization = Base64.getEncoder().encodeToString("${envConfig!!.getString("client_id")}:${envConfig.getString("client_secret")}"
+	val base64Authorization = Base64.getEncoder().encodeToString("${authConfig.clientId}:${authConfig.clientSecret}"
 																	 .toByteArray())
 
 	val headers = Headers.Builder()
@@ -37,12 +37,12 @@ fun getOauth2(args: List<String>) {
 		.build()
 
 	val requestBody = FormBody.Builder()
-		.addEncoded("grant_type", envConfig.getString("grant_type"))
+		.addEncoded("grant_type", authConfig.grantType)
 		.build()
 
 
 	val request = Request.Builder()
-		.url(envConfig.getString("token_url"))
+		.url(authConfig.tokenUrl)
 		.post(requestBody)
 		.headers(headers)
 		.build()
@@ -86,13 +86,10 @@ private fun doPut(url: String, headers: Headers, body: String) {
 	performCall(request)
 }
 
-
-private fun extractHeaders(call: JSONObject): Headers {
-	var headersBuilder = Headers.Builder()
-	val jsonHeaders = JSONArray(call["headers"].toString())
-	jsonHeaders.toList().forEach {
-		it as Map<String, String>
-		headersBuilder.add(it["key"]!!, it["value"]!!)
+private fun extractHeaders(call: Call): Headers {
+	val headersBuilder = Headers.Builder()
+	call.headers.forEach {
+		headersBuilder.add(it.key, it.value)
 	}
 	return headersBuilder.build()
 }

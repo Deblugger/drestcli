@@ -1,10 +1,11 @@
 package deblugger.me
 
+import com.fasterxml.jackson.module.kotlin.readValue
+import deblugger.me.model.*
+import deblugger.me.model.Call
 import okhttp3.*
-import org.json.JSONObject
 import java.io.File
 import java.nio.charset.Charset
-import java.util.Base64
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
@@ -24,10 +25,10 @@ private fun processArguments(args: List<String>) {
 }
 
 private fun buildCall(args: List<String>) {
-	val envConfig = getConfig(args, "configuration")
+	val envConfig = getEnvVariables(args)
 	var call = getCall(args)
 	if (envConfig != null) {
-		call = replaceVariables(call, envConfig)
+		call = call.replaceVariables(envConfig)
 	}
 
 	doTheCall(call)
@@ -44,39 +45,15 @@ private fun displayHelp() {
 	""".trimIndent())
 }
 
-private fun getCall(args: List<String>): JSONObject {
+private fun getCall(args: List<String>): Call {
 	val call = args[args.indexOf("--call") + 1]
 
 	return try {
 		val file = File("/home/${System.getProperty("user.name")}/.drestcli/collection/$call.json")
-		JSONObject(file.inputStream().readBytes().toString(Charset.defaultCharset()))
+		objectMapper.readValue(file)
 	} catch (ex: Exception) {
 		println("Exception thrown trying to read env configuration!")
 		println(ex)
 		exitProcess(-1)
 	}
-}
-
-private fun replaceVariables(call: JSONObject, envConfig: JSONObject): JSONObject {
-	call.keys().forEach {
-		var jsonValue = call[it].toString()
-		val startOcurrences = jsonValue.getAllIndexOf("\${")
-		val endOcurrences = jsonValue.getAllIndexOf("}$")
-
-
-		var mergedOcurrences = startOcurrences.plus(endOcurrences).sorted()
-		if (mergedOcurrences.size % 2 > 0) {
-			println("Failure trying to parse variables, have you forget some \"}$\"?")
-			exitProcess(-1)
-		}
-
-		while (mergedOcurrences.isNotEmpty()) {
-			val variable = jsonValue.substring(mergedOcurrences[0], mergedOcurrences[1] + 2)
-			jsonValue = jsonValue.replace(variable, envConfig[variable.trimVariable()].toString())
-			mergedOcurrences = mergedOcurrences.drop(2) // drop the first two
-		}
-		call.put(it, jsonValue)
-	}
-
-	return call
 }
