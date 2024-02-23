@@ -29,8 +29,8 @@ fun getEnvVariables(args: List<String>): List<EnvVariables>? {
 }
 
 fun getAuthConfig(args: List<String>): AuthConfig {
-	return if (args.contains("--env")) {
-		val call = args[args.indexOf("--env") + 1]
+	return if (args.contains("--oauth2")) {
+		val call = args[args.indexOf("--oauth2") + 1]
 
 		try {
 			val file = File("/home/${System.getProperty("user.name")}/.drestcli/authentication/$call.json")
@@ -41,7 +41,6 @@ fun getAuthConfig(args: List<String>): AuthConfig {
 			exitProcess(-1)
 		}
 	} else {
-		println("--oauth2 option should have --env also included")
 		exitProcess(-1)
 	}
 }

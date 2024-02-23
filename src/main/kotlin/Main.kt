@@ -39,7 +39,7 @@ private fun displayHelp() {
 		This is a REST Client via CLI, to configure it you can go to ~/.drestcli/configuration and create environment in json
 		To add new calls you can go to ~/.drestcli/collections, under that folder you can create your own
 		
-		To retrieve oauth2 token use: drestcli --env <env> --oauth2
+		To retrieve oauth2 token use: drestcli --oauth2 <name>
 		
 		Basic usage: drestcli --env <env> --call <collection>/<call>		
 	""".trimIndent())
